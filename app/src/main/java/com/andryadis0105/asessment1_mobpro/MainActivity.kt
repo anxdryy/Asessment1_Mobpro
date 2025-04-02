@@ -182,16 +182,81 @@ fun AboutUsScreen(navController: NavController) {
             modifier = Modifier
                 .padding(innerPadding)
                 .fillMaxSize()
-                .padding(16.dp),
+                .padding(16.dp)
+                .verticalScroll(rememberScrollState()),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
             Image(
                 painter = painterResource(id = R.drawable.about_us_image_foreground),
                 contentDescription = "About Us",
-                modifier = Modifier.size(150.dp)
+                modifier = Modifier
+                    .size(150.dp)
+                    .padding(bottom = 16.dp)
             )
+
+            Text(
+                text = "Tentang Aplikasi",
+                fontSize = 22.sp,
+                color = Color.Black
+            )
+
+            Spacer(modifier = Modifier.height(8.dp))
+            HorizontalDivider(thickness = 1.dp, color = Color.Gray)
+            Spacer(modifier = Modifier.height(8.dp))
+
+            Card(
+                modifier = Modifier.fillMaxWidth(),
+                colors = CardDefaults.cardColors(containerColor = Color(0xFFE3F2FD))
+            ) {
+                Text(
+                    text = "Aplikasi ini dibuat untuk membantu proses menghitung M ke KM/KM ke M dengan lebih mudah dan cepat.",
+                    modifier = Modifier.padding(16.dp),
+                    fontSize = 16.sp
+                )
+            }
+
             Spacer(modifier = Modifier.height(16.dp))
-            Text("Aplikasi ini dikembangkan untuk membantu jual beli beras di Ponorogo.")
+
+            Text(
+                text = "Kenapa Memilih Aplikasi Ini?",
+                fontSize = 20.sp,
+                color = Color.Black
+            )
+            Spacer(modifier = Modifier.height(8.dp))
+            HorizontalDivider(thickness = 1.dp, color = Color.Gray)
+            Spacer(modifier = Modifier.height(8.dp))
+
+            repeat(5) {
+                Card(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(vertical = 4.dp),
+                    colors = CardDefaults.cardColors(containerColor = Color(0xFFFFF9C4))
+                ) {
+                    Text(
+                        text = "Aplikasi ini memiliki fitur unggulan seperti kemudahan dalam menghitung, tampilan UI yang user-friendly, serta dukungan layanan yang siap membantu kapan saja.",
+                        modifier = Modifier.padding(16.dp),
+                        fontSize = 16.sp
+                    )
+                }
+            }
+
+            Spacer(modifier = Modifier.height(16.dp))
+
+            Text(
+                text = "Kontak Kami",
+                fontSize = 20.sp,
+                color = Color.Black
+            )
+            Spacer(modifier = Modifier.height(8.dp))
+            HorizontalDivider(thickness = 1.dp, color = Color.Gray)
+            Spacer(modifier = Modifier.height(8.dp))
+
+            Text(
+                text = "Jika ada pertanyaan, silakan hubungi kami melalui:\n- Email: support@gmail.com\n- Telepon: 0819 - 1792 - 6078",
+                fontSize = 16.sp,
+                modifier = Modifier.padding(16.dp)
+            )
         }
     }
 }
