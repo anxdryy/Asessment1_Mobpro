@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:tools="http://schemas.android.com/tools">
-    package="com.andryadio105.assessment1.mobpro">
+    package="com.andryadis0105.asessment1_mobpro">
 
     <uses-permission android:name="android.permission.INTERNET"/>
 
