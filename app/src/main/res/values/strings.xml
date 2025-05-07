@@ -1,3 +1,32 @@
 <resources>
-    <string name="app_name">Asessment1_Mobpro</string>
+    <string name="app_name">Catatan Mahasiswa</string>
+    <string name="tambah_catatan">Tambah Catatan</string>
+    <string name="edit_catatan">Edit Catatan</string>
+    <string name="simpan">Simpan</string>
+    <string name="kembali">Kembali</string>
+    <string name="hapus">Hapus</string>
+    <string name="batal">Batal</string>
+    <string name="konfirmasi_hapus">Konfirmasi Hapus</string>
+    <string name="pesan_hapus">Apakah Anda yakin ingin menghapus catatan ini?</string>
+    <string name="invalid">Nama dan NIM tidak boleh kosong</string>
+    <string name="nama">Nama</string>
+    <string name="nim">NIM</string>
+    <string name="pilih_kelas">Pilih Kelas</string>
+    <string name="list_kosong">Tidak ada catatan</string>
+    <string name="grid">Grid View</string>
+    <string name="list">List View</string>
+    <string name="lainnya">Lainnya</string>
+    <string name="recycle_bin">Recycle Bin</string>
+
+    <string name="hapus_permanen">Hapus Permanen</string>
+
+    <string name="cari_nim">Cari NIM</string>
+    <string name="hapus_pencarian">Hapus Pencarian</string>
+
+    <string name="recycle_bin_empty">Recycle Bin kosong</string>
+    <string name="restore">Pulihkan</string>
+
+
+    <string name="tombol_hapus">Delete</string>
+    <string name="tombol_batal">Cancel</string>
 </resources>
