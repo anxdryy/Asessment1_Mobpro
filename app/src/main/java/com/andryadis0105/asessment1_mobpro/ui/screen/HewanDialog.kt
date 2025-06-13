@@ -32,7 +32,6 @@ import androidx.compose.ui.window.Dialog
 import com.andryadis0105.asessment1_mobpro.R
 import com.andryadis0105.asessment1_mobpro.ui.theme.Asessment1_MobproTheme
 
-
 @Composable
 fun HewanDialog(
     bitmap: Bitmap?,

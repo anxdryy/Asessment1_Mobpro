@@ -65,8 +65,12 @@ import androidx.credentials.exceptions.GetCredentialException
 import androidx.lifecycle.viewmodel.compose.viewModel
 import coil.compose.AsyncImage
 import coil.request.ImageRequest
+import com.andryadis0105.asessment1_mobpro.BuildConfig
 import com.andryadis0105.asessment1_mobpro.R
+import com.andryadis0105.asessment1_mobpro.model.Hewan
 import com.andryadis0105.asessment1_mobpro.model.User
+import com.andryadis0105.asessment1_mobpro.network.ApiStatus
+import com.andryadis0105.asessment1_mobpro.network.HewanApi
 import com.andryadis0105.asessment1_mobpro.network.UserDataStore
 import com.andryadis0105.asessment1_mobpro.ui.theme.Asessment1_MobproTheme
 import com.canhub.cropper.CropImageContract

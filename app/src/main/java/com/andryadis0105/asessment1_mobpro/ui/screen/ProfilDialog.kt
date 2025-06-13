@@ -33,7 +33,6 @@ import com.andryadis0105.asessment1_mobpro.R
 import com.andryadis0105.asessment1_mobpro.model.User
 import com.andryadis0105.asessment1_mobpro.ui.theme.Asessment1_MobproTheme
 
-
 @Composable
 fun ProfilDialog(
     user: User,
