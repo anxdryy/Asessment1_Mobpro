@@ -1,68 +1,90 @@
 package com.andryadis0105.asessment1_mobpro.ui.screen
 
+import android.graphics.Bitmap
+import android.util.Log
+import androidx.compose.runtime.mutableStateOf
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.andryadis0105.asessment1_mobpro.database.CatatanDao
-import com.andryadis0105.asessment1_mobpro.model.Catatan
-import kotlinx.coroutines.ExperimentalCoroutinesApi
+import com.andryadis0105.asessment1_mobpro.model.Hewan
+import com.andryadis0105.asessment1_mobpro.network.ApiStatus
+import com.andryadis0105.asessment1_mobpro.network.HewanApi
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.SharingStarted
-import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.flatMapLatest
-import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
+import okhttp3.MediaType.Companion.toMediaTypeOrNull
+import okhttp3.MultipartBody
+import okhttp3.RequestBody.Companion.toRequestBody
+import java.io.ByteArrayOutputStream
 
-class MainViewModel(private val dao: CatatanDao) : ViewModel() {
-    private val _sortType = MutableStateFlow(SortType.BY_KELAS)
-    val sortType: StateFlow<SortType> = _sortType
+class MainViewModel : ViewModel() {
 
+    var data = mutableStateOf(emptyList<Hewan>())
+        private set
 
-    @OptIn(ExperimentalCoroutinesApi::class)
-    val activeNotes: StateFlow<List<Catatan>> = _sortType
-        .flatMapLatest { sortType ->
-            when (sortType) {
-                SortType.BY_NAMA -> dao.getCatatanSortByNama()
-                SortType.BY_NIM -> dao.getCatatanSortByNim()
-                else -> dao.getActiveCatatan()
+    var status = MutableStateFlow(ApiStatus.LOADING)
+        private set
+
+    var errorMessage = mutableStateOf<String?>(null)
+        private set
+
+    fun retrieveData(userId: String) {
+        viewModelScope.launch(Dispatchers.IO) {
+            status.value = ApiStatus.LOADING
+            try {
+                data.value = HewanApi.service.getHewan(userId)
+                status.value = ApiStatus.SUCCESS
+            } catch (e : Exception) {
+                Log.d("MainViewModel", "Failure: ${e.message}")
+                status.value = ApiStatus.FAILED
             }
         }
-        .stateIn(
-            scope = viewModelScope,
-            started = SharingStarted.WhileSubscribed(5000),
-            initialValue = emptyList()
-        )
-
-
-    val deletedNotes = dao.getDeletedCatatan()
-        .stateIn(
-            scope = viewModelScope,
-            started = SharingStarted.WhileSubscribed(5000),
-            initialValue = emptyList()
-        )
-
-    fun setSortType(type: SortType) {
-        _sortType.value = type
     }
 
-    fun restoreNote(id: Long) {
-        viewModelScope.launch {
-            dao.restoreById(id)
+    fun saveData(userId:String,nama:String,namaLatin:String,bitmap:Bitmap) {
+        viewModelScope.launch(Dispatchers.IO) {
+            try {
+                val result = HewanApi.service.postHewan(
+                    userId,
+                    nama.toRequestBody("text/plain".toMediaTypeOrNull()),
+                    namaLatin.toRequestBody("text/plain".toMediaTypeOrNull()),
+                    bitmap.toMultipartBody()
+                )
+
+                if (result.status=="success")
+                    retrieveData(userId)
+                else
+                    throw Exception(result.message)
+            } catch (e: Exception) {
+                Log.d("MainViewModel", "Failure: ${e.message}")
+                errorMessage.value = "Error: ${e.message}"
+            }
         }
     }
 
-    fun permanentDelete(id: Long) {
-        viewModelScope.launch {
-            dao.deleteById(id)
+    private fun Bitmap.toMultipartBody(): MultipartBody.Part {
+        val stream = ByteArrayOutputStream()
+        compress(Bitmap.CompressFormat.JPEG, 80, stream)
+        val byteArray = stream.toByteArray()
+        val requestBody = byteArray.toRequestBody(
+            "image/jpg".toMediaTypeOrNull(),0,byteArray.size)
+        return MultipartBody.Part.createFormData(
+            "image", "image.jpg", requestBody)
+    }
+
+    fun deleteData(userId: String, id: String) {
+        viewModelScope.launch(Dispatchers.IO) {
+            try {
+                val result = HewanApi.service.deleteHewan(userId, id)
+                if (result.status == "success") {
+                    retrieveData(userId)
+                } else {
+                    errorMessage.value = result.message ?: "Gagal menghapus"
+                }
+            } catch (e: Exception) {
+                errorMessage.value = "Error: ${e.message}"
+            }
         }
     }
 
-    fun softDelete(id: Long) {
-        viewModelScope.launch {
-            dao.softDeleteById(id, System.currentTimeMillis())
-        }
-    }
-}
-
-enum class SortType {
-    BY_NAMA, BY_NIM, BY_KELAS
+    fun clearMessage() {errorMessage.value=null}
 }
