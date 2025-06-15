@@ -49,10 +49,8 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
-import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -68,10 +66,9 @@ import coil.compose.AsyncImage
 import coil.request.ImageRequest
 import com.andryadis0105.asessment1_mobpro.BuildConfig
 import com.andryadis0105.asessment1_mobpro.R
-import com.andryadis0105.asessment1_mobpro.model.Hewan
+import com.andryadis0105.asessment1_mobpro.model.Kamus
 import com.andryadis0105.asessment1_mobpro.model.User
-import com.andryadis0105.asessment1_mobpro.network.ApiStatus
-import com.andryadis0105.asessment1_mobpro.network.HewanApi
+import com.andryadis0105.asessment1_mobpro.network.KamusApi
 import com.andryadis0105.asessment1_mobpro.network.UserDataStore
 import com.andryadis0105.asessment1_mobpro.ui.theme.Asessment1_MobproTheme
 import com.canhub.cropper.CropImageContract
@@ -96,21 +93,22 @@ fun MainScreen() {
     val errorMessage by viewModel.errorMessage
 
     var showDialog by remember { mutableStateOf(false) }
-    var showHewanDialog by remember { mutableStateOf(false) }
+    var showKamusDialog by remember { mutableStateOf(false) }
     var showDeleteDialog by remember { mutableStateOf(false) }
-    var selectedHewanId by remember { mutableStateOf<String?>(null) }
+    var selectedKamusId by remember { mutableStateOf<String?>(null) }
+    var editingKamus by remember { mutableStateOf<Kamus?>(null) } // <-- ADD THIS LINE
 
     var bitmap: Bitmap? by remember { mutableStateOf(null) }
     val launcher = rememberLauncherForActivityResult(CropImageContract()) {
         bitmap = getCropperImage(context.contentResolver, it)
-        if (bitmap != null) showHewanDialog = true
+        showKamusDialog = true
     }
 
     Scaffold(
         topBar = {
             TopAppBar(
                 title = {
-                    Text(text = stringResource(id = R.string.app_name))
+                    Text(text = "Kamus Indonesia-Inggris")
                 },
                 colors = TopAppBarDefaults.mediumTopAppBarColors(
                     containerColor = MaterialTheme.colorScheme.primaryContainer,
@@ -126,7 +124,7 @@ fun MainScreen() {
                     }) {
                         Icon(
                             painter = painterResource(R.drawable.baseline_account_circle_24),
-                            contentDescription = stringResource(R.string.profil),
+                            contentDescription = "Profil",
                             tint = MaterialTheme.colorScheme.primary
                         )
                     }
@@ -134,30 +132,37 @@ fun MainScreen() {
             )
         },
         floatingActionButton = {
-            FloatingActionButton(onClick = {
-                val options = CropImageContractOptions(
-                    null, CropImageOptions(
-                        imageSourceIncludeGallery = false,
-                        imageSourceIncludeCamera = true,
-                        fixAspectRatio = true
+            if (user.email.isNotEmpty()) {
+                FloatingActionButton(onClick = {
+                    editingKamus = null // <-- Reset editingKamus when adding new
+                    val options = CropImageContractOptions(
+                        null, CropImageOptions(
+                            imageSourceIncludeGallery = false,
+                            imageSourceIncludeCamera = true,
+                            fixAspectRatio = true
+                        )
                     )
-                )
-                launcher.launch(options)
-            }) {
-                Icon(
-                    imageVector = Icons.Default.Add,
-                    contentDescription = stringResource(id = R.string.tambah_hewan),
-                )
+                    launcher.launch(options)
+                }) {
+                    Icon(
+                        imageVector = Icons.Default.Add,
+                        contentDescription = "Tambah Kata",
+                    )
+                }
             }
         }
     ) { innerPadding ->
         ScreenContent(
             viewModel = viewModel,
-            userId = user.email,
+            authorization = user.email,
             modifier = Modifier.padding(innerPadding),
             onDeleteClick = { id ->
-                selectedHewanId = id
+                selectedKamusId = id
                 showDeleteDialog = true
+            },
+            onEditClick = { kamus -> // <-- MODIFY THIS LINE
+                editingKamus = kamus // <-- Set the kamus to be edited
+                showKamusDialog = true
             }
         )
 
@@ -169,18 +174,30 @@ fun MainScreen() {
                 showDialog = false
             }
         }
-        if (showHewanDialog) {
-            HewanDialog(
+        if (showKamusDialog) {
+            KamusDialog(
                 bitmap = bitmap,
-                onDismissRequest = { showHewanDialog = false }) { nama, namaLatin ->
-                viewModel.saveData(user.email, nama, namaLatin, bitmap!!)
-                showHewanDialog = false
+                kamus = editingKamus, // <-- PASS editingKamus HERE
+                onDismissRequest = {
+                    showKamusDialog = false
+                    bitmap = null // Clear bitmap after dialog is dismissed
+                    editingKamus = null // Clear editingKamus after dialog is dismissed
+                }
+            ) { bahasaIndonesia, bahasaInggris ->
+                if (editingKamus == null) {
+                    viewModel.saveData(user.email, bahasaIndonesia, bahasaInggris, bitmap)
+                } else {
+                    viewModel.updateData(user.email, editingKamus!!.id, bahasaIndonesia, bahasaInggris, bitmap) // <-- Call updateData
+                }
+                showKamusDialog = false
+                bitmap = null // Clear bitmap after saving
+                editingKamus = null // Clear editingKamus after saving
             }
         }
         if (showDeleteDialog) {
             DeleteConfirmationDialog(
                 onConfirmDelete = {
-                    selectedHewanId?.let { id ->
+                    selectedKamusId?.let { id ->
                         viewModel.deleteData(user.email, id)
                     }
                     showDeleteDialog = false
@@ -200,15 +217,18 @@ fun MainScreen() {
 @Composable
 fun ScreenContent(
     viewModel: MainViewModel,
-    userId: String,
+    authorization: String,
     modifier: Modifier = Modifier,
-    onDeleteClick: (String) -> Unit
+    onDeleteClick: (String) -> Unit,
+    onEditClick: (Kamus) -> Unit // <-- CHANGE TYPE TO Kamus
 ) {
     val data by viewModel.data
     val status by viewModel.status.collectAsState()
 
-    LaunchedEffect(userId) {
-        viewModel.retrieveData(userId)
+    LaunchedEffect(authorization) {
+        if (authorization.isNotEmpty()) {
+            viewModel.retrieveData(authorization)
+        }
     }
 
     when (status) {
@@ -226,35 +246,30 @@ fun ScreenContent(
                 columns = GridCells.Fixed(2),
                 contentPadding = PaddingValues(bottom = 80.dp)
             ) {
-                items(data) { hewan ->
-                    Log.d("MainScreen", hewan.toString())
+                items(data) { kamus ->
+                    Log.d("MainScreen", kamus.toString())
                     ListItem(
-                        hewan = hewan,
-                        onDeleteClick = onDeleteClick
+                        kamus = kamus,
+                        currentAuthorization = authorization,
+                        onDeleteClick = onDeleteClick,
+                        onEditClick = onEditClick // <-- PASS THE Kamus OBJECT
                     )
                 }
             }
         }
         ApiStatus.FAILED -> {
             Column(
-                modifier = modifier.fillMaxSize().padding(16.dp),
+                modifier = modifier.fillMaxSize(),
                 verticalArrangement = Arrangement.Center,
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
-
-                Text(
-                    text = stringResource(id = R.string.error),
-                    textAlign = TextAlign.Center,
-                    style = MaterialTheme.typography.bodyLarge,
-                    color = MaterialTheme.colorScheme.error,
-                    modifier = Modifier.padding(bottom = 16.dp)
-                )
+                Text(text = "Terjadi kesalahan")
                 Button(
-                    onClick = { viewModel.retrieveData(userId) },
+                    onClick = { viewModel.retrieveData(authorization) },
                     modifier = Modifier.padding(top = 16.dp),
                     contentPadding = PaddingValues(horizontal = 32.dp, vertical = 16.dp)
                 ) {
-                    Text(text = stringResource(id = R.string.try_again))
+                    Text(text = "Coba Lagi")
                 }
             }
         }
@@ -263,24 +278,28 @@ fun ScreenContent(
 
 @Composable
 fun ListItem(
-    hewan: Hewan,
+    kamus: Kamus,
+    currentAuthorization: String,
     onDeleteClick: (String) -> Unit,
+    onEditClick: (Kamus) -> Unit, // <-- CHANGE TYPE TO Kamus
 ) {
     Box(
         modifier = Modifier.padding(4.dp).border(1.dp, Color.Gray),
         contentAlignment = Alignment.BottomCenter
     ) {
-        AsyncImage(
-            model = ImageRequest.Builder(LocalContext.current)
-                .data(HewanApi.getHewanUrl(hewan.imageId))
-                .crossfade(true)
-                .build(),
-            contentDescription = stringResource(R.string.gambar, hewan.nama),
-            contentScale = ContentScale.Crop,
-            placeholder = painterResource(R.drawable.loading_img),
-            error = painterResource(R.drawable.baseline_broken_image_24),
-            modifier = Modifier.fillMaxWidth().padding(4.dp)
-        )
+        if (kamus.gambar != null) {
+            AsyncImage(
+                model = ImageRequest.Builder(LocalContext.current)
+                    .data(KamusApi.getKamusImageUrl(kamus.gambar))
+                    .crossfade(true)
+                    .build(),
+                contentDescription = "Gambar ${kamus.bahasaIndonesia}",
+                contentScale = ContentScale.Crop,
+                placeholder = painterResource(R.drawable.loading_img),
+                error = painterResource(R.drawable.baseline_broken_image_24),
+                modifier = Modifier.fillMaxWidth().padding(4.dp)
+            )
+        }
         Row(
             modifier = Modifier
                 .fillMaxWidth()
@@ -294,25 +313,34 @@ fun ListItem(
                 modifier = Modifier.weight(1f)
             ) {
                 Text(
-                    text = hewan.nama,
+                    text = kamus.bahasaIndonesia,
                     fontWeight = FontWeight.Bold,
                     color = Color.White
                 )
                 Text(
-                    text = hewan.namaLatin,
+                    text = kamus.bahasaInggris,
                     fontStyle = FontStyle.Italic,
                     fontSize = 14.sp,
                     color = Color.White
                 )
             }
 
-            if (hewan.mine == "1") {
+            if (kamus.Authorization == currentAuthorization) {
                 IconButton(
-                    onClick = { onDeleteClick(hewan.id) }
+                    onClick = { onDeleteClick(kamus.id) }
                 ) {
                     Icon(
                         painter = painterResource(id = R.drawable.baseline_delete_24),
                         contentDescription = "Hapus",
+                        tint = Color.White
+                    )
+                }
+                IconButton(
+                    onClick = { onEditClick(kamus) } // <-- PASS THE Kamus OBJECT
+                ) {
+                    Icon(
+                        painter = painterResource(id = R.drawable.baseline_edit_24),
+                        contentDescription = "Edit", // <-- CHANGE DESCRIPTION
                         tint = Color.White
                     )
                 }
@@ -391,7 +419,7 @@ private fun getCropperImage(
 @Preview(showBackground = true)
 @Preview(uiMode = Configuration.UI_MODE_NIGHT_YES, showBackground = true)
 @Composable
-fun GreetingPreview() {
+fun MainScreenPreview() {
     Asessment1_MobproTheme {
         MainScreen()
     }
