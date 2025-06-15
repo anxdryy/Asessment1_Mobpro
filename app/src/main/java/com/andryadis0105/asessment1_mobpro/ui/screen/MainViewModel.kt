@@ -15,6 +15,9 @@ import okhttp3.MediaType.Companion.toMediaTypeOrNull
 import okhttp3.MultipartBody
 import okhttp3.RequestBody.Companion.toRequestBody
 import java.io.ByteArrayOutputStream
+import java.net.UnknownHostException
+import java.net.SocketTimeoutException
+import java.io.IOException
 
 class MainViewModel : ViewModel() {
 
@@ -31,32 +34,77 @@ class MainViewModel : ViewModel() {
         viewModelScope.launch(Dispatchers.IO) {
             status.value = ApiStatus.LOADING
             try {
-                data.value = HewanApi.service.getHewan(userId)
-                status.value = ApiStatus.SUCCESS
-            } catch (e : Exception) {
+                val combinedData = mutableListOf<Hewan>()
+
+                // 1. Ambil data dari Dog API (data publik)
+                val dogApiData = HewanApi.getHewan(userId)
+                combinedData.addAll(dogApiData)
+
+                // 2. Ambil data dari API lama (data user)
+                try {
+                    val userApiData = HewanApi.getUserHewan(userId)
+                    combinedData.addAll(userApiData)
+                } catch (e: Exception) {
+                    Log.d("MainViewModel", "Failed to load user data: ${e.message}")
+                    // Tidak throw error, karena Dog API data masih berhasil
+                }
+
+                // Jika tidak ada data sama sekali dan terjadi error koneksi
+                if (combinedData.isEmpty()) {
+                    status.value = ApiStatus.FAILED
+                } else {
+                    data.value = combinedData
+                    status.value = ApiStatus.SUCCESS
+                }
+
+            } catch (e: Exception) {
                 Log.d("MainViewModel", "Failure: ${e.message}")
-                status.value = ApiStatus.FAILED
+
+                // Handle different types of network errors
+                when (e) {
+                    is UnknownHostException,
+                    is SocketTimeoutException,
+                    is IOException -> {
+                        // Network connection error
+                        status.value = ApiStatus.FAILED
+                    }
+                    else -> {
+                        // Other errors
+                        status.value = ApiStatus.FAILED
+                        errorMessage.value = "Error: ${e.message}"
+                    }
+                }
             }
         }
     }
 
-    fun saveData(userId:String,nama:String,namaLatin:String,bitmap:Bitmap) {
+    fun saveData(userId: String, nama: String, namaLatin: String, bitmap: Bitmap) {
         viewModelScope.launch(Dispatchers.IO) {
             try {
-                val result = HewanApi.service.postHewan(
+                // Menggunakan oldService untuk insert (API lama)
+                val result = HewanApi.oldService.postHewan(
                     userId,
                     nama.toRequestBody("text/plain".toMediaTypeOrNull()),
                     namaLatin.toRequestBody("text/plain".toMediaTypeOrNull()),
                     bitmap.toMultipartBody()
                 )
 
-                if (result.status=="success")
-                    retrieveData(userId)
-                else
+                if (result.status == "success") {
+                    retrieveData(userId) // Refresh untuk menampilkan data baru
+                } else {
                     throw Exception(result.message)
+                }
             } catch (e: Exception) {
                 Log.d("MainViewModel", "Failure: ${e.message}")
-                errorMessage.value = "Error: ${e.message}"
+
+                // Handle network errors gracefully
+                val errorMsg = when (e) {
+                    is UnknownHostException -> "Tidak ada koneksi internet"
+                    is SocketTimeoutException -> "Koneksi timeout"
+                    is IOException -> "Gagal terhubung ke server"
+                    else -> "Error: ${e.message}"
+                }
+                errorMessage.value = errorMsg
             }
         }
     }
@@ -66,25 +114,36 @@ class MainViewModel : ViewModel() {
         compress(Bitmap.CompressFormat.JPEG, 80, stream)
         val byteArray = stream.toByteArray()
         val requestBody = byteArray.toRequestBody(
-            "image/jpg".toMediaTypeOrNull(),0,byteArray.size)
+            "image/jpg".toMediaTypeOrNull(), 0, byteArray.size
+        )
         return MultipartBody.Part.createFormData(
-            "image", "image.jpg", requestBody)
+            "image", "image.jpg", requestBody
+        )
     }
 
     fun deleteData(userId: String, id: String) {
         viewModelScope.launch(Dispatchers.IO) {
             try {
-                val result = HewanApi.service.deleteHewan(userId, id)
+                // Menggunakan oldService untuk delete (API lama)
+                val result = HewanApi.oldService.deleteHewan(userId, id)
                 if (result.status == "success") {
-                    retrieveData(userId)
+                    retrieveData(userId) // Refresh data setelah delete
                 } else {
                     errorMessage.value = result.message ?: "Gagal menghapus"
                 }
             } catch (e: Exception) {
-                errorMessage.value = "Error: ${e.message}"
+                val errorMsg = when (e) {
+                    is UnknownHostException -> "Tidak ada koneksi internet"
+                    is SocketTimeoutException -> "Koneksi timeout"
+                    is IOException -> "Gagal terhubung ke server"
+                    else -> "Error: ${e.message}"
+                }
+                errorMessage.value = errorMsg
             }
         }
     }
 
-    fun clearMessage() {errorMessage.value=null}
+    fun clearMessage() {
+        errorMessage.value = null
+    }
 }
