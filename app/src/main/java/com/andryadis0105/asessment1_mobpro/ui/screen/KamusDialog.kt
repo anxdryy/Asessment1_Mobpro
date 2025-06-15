@@ -30,22 +30,22 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
 import com.andryadis0105.asessment1_mobpro.ui.theme.Asessment1_MobproTheme
-import com.andryadis0105.asessment1_mobpro.model.Kamus // Import your Kamus data class
+import com.andryadis0105.asessment1_mobpro.model.Kamus
 import coil.compose.AsyncImage
 import coil.request.ImageRequest
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
-import com.andryadis0105.asessment1_mobpro.R // Assuming you have placeholder/error drawables here
-import com.andryadis0105.asessment1_mobpro.network.KamusApi // Import KamusApi for image URL
+import com.andryadis0105.asessment1_mobpro.R
+import com.andryadis0105.asessment1_mobpro.network.KamusApi
 
 @Composable
 fun KamusDialog(
     bitmap: Bitmap?,
-    kamus: Kamus?, // <-- ADD THIS PARAMETER for editing
+    kamus: Kamus?,
     onDismissRequest: () -> Unit,
     onConfirmation: (String, String) -> Unit
 ){
-    // Initialize state with values from 'kamus' if it's in edit mode, otherwise empty
+
     var bahasaIndonesia by remember { mutableStateOf(kamus?.bahasaIndonesia ?: "") }
     var bahasaInggris by remember { mutableStateOf(kamus?.bahasaInggris ?: "") }
 
@@ -58,13 +58,9 @@ fun KamusDialog(
                 modifier = Modifier.padding(16.dp),
                 horizontalAlignment = Alignment.CenterHorizontally,
             ) {
-                // Dynamic title for the dialog
+
                 Text(text = if (kamus == null) "Tambah Kata Baru" else "Edit Kata")
 
-                // Image display logic:
-                // 1. Show newly selected bitmap if available
-                // 2. Otherwise, show existing kamus image if available
-                // 3. Otherwise, show a generic placeholder image
                 if (bitmap != null) {
                     Image(
                         bitmap = bitmap.asImageBitmap(),
@@ -72,7 +68,7 @@ fun KamusDialog(
                         modifier = Modifier
                             .fillMaxWidth()
                             .aspectRatio(1f)
-                            .padding(top = 8.dp) // Add some padding
+                            .padding(top = 8.dp)
                     )
                 } else if (kamus?.gambar != null) {
                     AsyncImage(
@@ -84,17 +80,17 @@ fun KamusDialog(
                         modifier = Modifier
                             .fillMaxWidth()
                             .aspectRatio(1f)
-                            .padding(top = 8.dp), // Add some padding
-                        contentScale = androidx.compose.ui.layout.ContentScale.Crop, // Use full path to avoid ambiguity
-                        placeholder = painterResource(R.drawable.loading_img), // Make sure you have these drawables
-                        error = painterResource(R.drawable.baseline_broken_image_24) // Make sure you have these drawables
+                            .padding(top = 8.dp),
+                        contentScale = androidx.compose.ui.layout.ContentScale.Crop,
+                        placeholder = painterResource(R.drawable.loading_img),
+                        error = painterResource(R.drawable.baseline_broken_image_24)
                     )
                 } else {
                     Image(
-                        painter = painterResource(id = R.drawable.baseline_image_24), // Generic image placeholder
+                        painter = painterResource(id = R.drawable.baseline_image_24),
                         contentDescription = "No Image Selected",
                         modifier = Modifier
-                            .size(128.dp) // Set a fixed size for the placeholder
+                            .size(128.dp)
                             .padding(top = 8.dp)
                     )
                 }
@@ -136,7 +132,7 @@ fun KamusDialog(
                         enabled = bahasaIndonesia.isNotEmpty() && bahasaInggris.isNotEmpty(),
                         modifier = Modifier.padding(8.dp)
                     ){
-                        // Dynamic button text
+
                         Text(text = if (kamus == null) "Simpan" else "Update")
                     }
                 }
@@ -150,10 +146,10 @@ fun KamusDialog(
 @Composable
 fun KamusDialogPreview(){
     Asessment1_MobproTheme {
-        // Preview for adding a new Kamus entry
+
         KamusDialog(
             bitmap = null,
-            kamus = null, // No existing Kamus for "add" preview
+            kamus = null,
             onDismissRequest = { },
             onConfirmation = { _, _ -> }
         )
@@ -165,14 +161,14 @@ fun KamusDialogPreview(){
 @Composable
 fun KamusDialogEditPreview(){
     Asessment1_MobproTheme {
-        // Preview for editing an existing Kamus entry
+
         KamusDialog(
             bitmap = null,
             kamus = Kamus(
                 id = "123",
                 bahasaIndonesia = "Rumah",
                 bahasaInggris = "House",
-                gambar = "dummy_image_path.jpg", // Use a dummy path for preview
+                gambar = "dummy_image_path.jpg",
                 Authorization = "user@example.com"
             ),
             onDismissRequest = { },

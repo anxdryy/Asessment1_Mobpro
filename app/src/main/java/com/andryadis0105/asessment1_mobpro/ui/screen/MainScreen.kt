@@ -96,7 +96,7 @@ fun MainScreen() {
     var showKamusDialog by remember { mutableStateOf(false) }
     var showDeleteDialog by remember { mutableStateOf(false) }
     var selectedKamusId by remember { mutableStateOf<String?>(null) }
-    var editingKamus by remember { mutableStateOf<Kamus?>(null) } // <-- ADD THIS LINE
+    var editingKamus by remember { mutableStateOf<Kamus?>(null) }
 
     var bitmap: Bitmap? by remember { mutableStateOf(null) }
     val launcher = rememberLauncherForActivityResult(CropImageContract()) {
@@ -134,7 +134,7 @@ fun MainScreen() {
         floatingActionButton = {
             if (user.email.isNotEmpty()) {
                 FloatingActionButton(onClick = {
-                    editingKamus = null // <-- Reset editingKamus when adding new
+                    editingKamus = null
                     val options = CropImageContractOptions(
                         null, CropImageOptions(
                             imageSourceIncludeGallery = false,
@@ -160,8 +160,8 @@ fun MainScreen() {
                 selectedKamusId = id
                 showDeleteDialog = true
             },
-            onEditClick = { kamus -> // <-- MODIFY THIS LINE
-                editingKamus = kamus // <-- Set the kamus to be edited
+            onEditClick = { kamus ->
+                editingKamus = kamus
                 showKamusDialog = true
             }
         )
@@ -177,21 +177,21 @@ fun MainScreen() {
         if (showKamusDialog) {
             KamusDialog(
                 bitmap = bitmap,
-                kamus = editingKamus, // <-- PASS editingKamus HERE
+                kamus = editingKamus,
                 onDismissRequest = {
                     showKamusDialog = false
-                    bitmap = null // Clear bitmap after dialog is dismissed
-                    editingKamus = null // Clear editingKamus after dialog is dismissed
+                    bitmap = null
+                    editingKamus = null
                 }
             ) { bahasaIndonesia, bahasaInggris ->
                 if (editingKamus == null) {
                     viewModel.saveData(user.email, bahasaIndonesia, bahasaInggris, bitmap)
                 } else {
-                    viewModel.updateData(user.email, editingKamus!!.id, bahasaIndonesia, bahasaInggris, bitmap) // <-- Call updateData
+                    viewModel.updateData(user.email, editingKamus!!.id, bahasaIndonesia, bahasaInggris, bitmap)
                 }
                 showKamusDialog = false
-                bitmap = null // Clear bitmap after saving
-                editingKamus = null // Clear editingKamus after saving
+                bitmap = null
+                editingKamus = null
             }
         }
         if (showDeleteDialog) {
@@ -220,7 +220,7 @@ fun ScreenContent(
     authorization: String,
     modifier: Modifier = Modifier,
     onDeleteClick: (String) -> Unit,
-    onEditClick: (Kamus) -> Unit // <-- CHANGE TYPE TO Kamus
+    onEditClick: (Kamus) -> Unit
 ) {
     val data by viewModel.data
     val status by viewModel.status.collectAsState()
@@ -252,7 +252,7 @@ fun ScreenContent(
                         kamus = kamus,
                         currentAuthorization = authorization,
                         onDeleteClick = onDeleteClick,
-                        onEditClick = onEditClick // <-- PASS THE Kamus OBJECT
+                        onEditClick = onEditClick
                     )
                 }
             }
@@ -281,7 +281,7 @@ fun ListItem(
     kamus: Kamus,
     currentAuthorization: String,
     onDeleteClick: (String) -> Unit,
-    onEditClick: (Kamus) -> Unit, // <-- CHANGE TYPE TO Kamus
+    onEditClick: (Kamus) -> Unit,
 ) {
     Box(
         modifier = Modifier.padding(4.dp).border(1.dp, Color.Gray),
@@ -336,11 +336,11 @@ fun ListItem(
                     )
                 }
                 IconButton(
-                    onClick = { onEditClick(kamus) } // <-- PASS THE Kamus OBJECT
+                    onClick = { onEditClick(kamus) }
                 ) {
                     Icon(
                         painter = painterResource(id = R.drawable.baseline_edit_24),
-                        contentDescription = "Edit", // <-- CHANGE DESCRIPTION
+                        contentDescription = "Edit",
                         tint = Color.White
                     )
                 }

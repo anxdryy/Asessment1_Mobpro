@@ -69,7 +69,7 @@ class MainViewModel : ViewModel() {
                         bahasaInggris
                     )
                 }
-                retrieveData(authorization) // Refresh data after saving
+                retrieveData(authorization)
                 _errorMessage.value = "Data saved successfully!"
             } catch (e: Exception) {
                 Log.e("MainViewModel", "Error saving data: ${e.message}")
@@ -109,7 +109,7 @@ class MainViewModel : ViewModel() {
                         bahasaInggris
                     )
                 }
-                retrieveData(authorization) // Refresh data after updating
+                retrieveData(authorization)
                 _errorMessage.value = "Data updated successfully!"
             } catch (e: Exception) {
                 Log.e("MainViewModel", "Error updating data: ${e.message}")
@@ -122,7 +122,7 @@ class MainViewModel : ViewModel() {
         viewModelScope.launch(Dispatchers.IO) {
             try {
                 KamusApi.service.deleteKamus(authorization, id)
-                retrieveData(authorization) // Refresh data after deleting
+                retrieveData(authorization)
                 _errorMessage.value = "Data deleted successfully!"
             } catch (e: Exception) {
                 Log.e("MainViewModel", "Error deleting data: ${e.message}")
