@@ -17,9 +17,13 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
@@ -82,6 +86,7 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 
+
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun MainScreen() {
@@ -99,10 +104,19 @@ fun MainScreen() {
     var editingKamus by remember { mutableStateOf<Kamus?>(null) }
 
     var bitmap: Bitmap? by remember { mutableStateOf(null) }
-    val launcher = rememberLauncherForActivityResult(CropImageContract()) {
+
+    val addImageLauncher = rememberLauncherForActivityResult(CropImageContract()) {
         bitmap = getCropperImage(context.contentResolver, it)
+        editingKamus = null
         showKamusDialog = true
     }
+
+    val editImageLauncher = rememberLauncherForActivityResult(CropImageContract()) {
+        bitmap = getCropperImage(context.contentResolver, it)
+
+        showKamusDialog = true
+    }
+
 
     Scaffold(
         topBar = {
@@ -135,6 +149,7 @@ fun MainScreen() {
             if (user.email.isNotEmpty()) {
                 FloatingActionButton(onClick = {
                     editingKamus = null
+                    bitmap = null
                     val options = CropImageContractOptions(
                         null, CropImageOptions(
                             imageSourceIncludeGallery = false,
@@ -142,7 +157,7 @@ fun MainScreen() {
                             fixAspectRatio = true
                         )
                     )
-                    launcher.launch(options)
+                    addImageLauncher.launch(options)
                 }) {
                     Icon(
                         imageVector = Icons.Default.Add,
@@ -162,7 +177,20 @@ fun MainScreen() {
             },
             onEditClick = { kamus ->
                 editingKamus = kamus
+                bitmap = null
                 showKamusDialog = true
+            },
+            onEditImageClick = { kamus ->
+                editingKamus = kamus
+
+                val options = CropImageContractOptions(
+                    null, CropImageOptions(
+                        imageSourceIncludeGallery = false,
+                        imageSourceIncludeCamera = true,
+                        fixAspectRatio = true
+                    )
+                )
+                editImageLauncher.launch(options)
             }
         )
 
@@ -185,8 +213,10 @@ fun MainScreen() {
                 }
             ) { bahasaIndonesia, bahasaInggris ->
                 if (editingKamus == null) {
+
                     viewModel.saveData(user.email, bahasaIndonesia, bahasaInggris, bitmap)
                 } else {
+
                     viewModel.updateData(user.email, editingKamus!!.id, bahasaIndonesia, bahasaInggris, bitmap)
                 }
                 showKamusDialog = false
@@ -220,7 +250,8 @@ fun ScreenContent(
     authorization: String,
     modifier: Modifier = Modifier,
     onDeleteClick: (String) -> Unit,
-    onEditClick: (Kamus) -> Unit
+    onEditClick: (Kamus) -> Unit,
+    onEditImageClick: (Kamus) -> Unit
 ) {
     val data by viewModel.data
     val status by viewModel.status.collectAsState()
@@ -252,7 +283,8 @@ fun ScreenContent(
                         kamus = kamus,
                         currentAuthorization = authorization,
                         onDeleteClick = onDeleteClick,
-                        onEditClick = onEditClick
+                        onEditClick = onEditClick,
+                        onEditImageClick = onEditImageClick
                     )
                 }
             }
@@ -282,65 +314,96 @@ fun ListItem(
     currentAuthorization: String,
     onDeleteClick: (String) -> Unit,
     onEditClick: (Kamus) -> Unit,
+    onEditImageClick: (Kamus) -> Unit
 ) {
     Box(
-        modifier = Modifier.padding(4.dp).border(1.dp, Color.Gray),
-        contentAlignment = Alignment.BottomCenter
+        modifier = Modifier
+            .padding(4.dp)
+            .border(1.dp, Color.Gray)
+            .fillMaxWidth()
+            .background(MaterialTheme.colorScheme.surfaceVariant)
     ) {
-        if (kamus.gambar != null) {
-            AsyncImage(
-                model = ImageRequest.Builder(LocalContext.current)
-                    .data(KamusApi.getKamusImageUrl(kamus.gambar))
-                    .crossfade(true)
-                    .build(),
-                contentDescription = "Gambar ${kamus.bahasaIndonesia}",
-                contentScale = ContentScale.Crop,
-                placeholder = painterResource(R.drawable.loading_img),
-                error = painterResource(R.drawable.baseline_broken_image_24),
-                modifier = Modifier.fillMaxWidth().padding(4.dp)
-            )
-        }
-        Row(
+
+        Column(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(4.dp)
-                .background(Color(0f, 0f, 0f, 0.5f))
-                .padding(4.dp),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.SpaceBetween
+                .padding(8.dp)
         ) {
-            Column(
-                modifier = Modifier.weight(1f)
-            ) {
-                Text(
-                    text = kamus.bahasaIndonesia,
-                    fontWeight = FontWeight.Bold,
-                    color = Color.White
+            if (kamus.gambar != null) {
+                AsyncImage(
+                    model = ImageRequest.Builder(LocalContext.current)
+                        .data(KamusApi.getKamusImageUrl(kamus.gambar))
+                        .crossfade(true)
+                        .build(),
+                    contentDescription = "Gambar ${kamus.bahasaIndonesia}",
+                    contentScale = ContentScale.Crop,
+                    placeholder = painterResource(R.drawable.loading_img),
+                    error = painterResource(R.drawable.baseline_broken_image_24),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .aspectRatio(1.2f)
+                        .background(Color.LightGray)
                 )
-                Text(
-                    text = kamus.bahasaInggris,
-                    fontStyle = FontStyle.Italic,
-                    fontSize = 14.sp,
-                    color = Color.White
-                )
-            }
+            } else {
 
-            if (kamus.Authorization == currentAuthorization) {
-                IconButton(
-                    onClick = { onDeleteClick(kamus.id) }
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .aspectRatio(1.2f)
+                        .background(Color.LightGray),
+                    contentAlignment = Alignment.Center
                 ) {
                     Icon(
-                        painter = painterResource(id = R.drawable.baseline_delete_24),
-                        contentDescription = "Hapus",
+                        painter = painterResource(id = R.drawable.baseline_image_24),
+                        contentDescription = "No Image",
+                        tint = Color.Gray.copy(alpha = 0.6f),
+                        modifier = Modifier.size(64.dp)
+                    )
+                }
+            }
+
+            Spacer(modifier = Modifier.height(8.dp))
+
+            Text(
+                text = kamus.bahasaIndonesia,
+                fontWeight = FontWeight.Bold,
+                fontSize = 18.sp,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+            Text(
+                text = kamus.bahasaInggris,
+                fontStyle = FontStyle.Italic,
+                fontSize = 16.sp,
+                color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f)
+            )
+        }
+
+        if (kamus.Authorization == currentAuthorization) {
+            Row(
+                modifier = Modifier
+                    .align(Alignment.TopEnd)
+                    .padding(4.dp)
+                    .background(Color(0f, 0f, 0f, 0.4f)),
+                horizontalArrangement = Arrangement.End
+            ) {
+                IconButton(onClick = { onEditImageClick(kamus) }) {
+                    Icon(
+                        painter = painterResource(id = R.drawable.baseline_image_24),
+                        contentDescription = "Edit Gambar",
                         tint = Color.White
                     )
                 }
-                IconButton(
-                    onClick = { onEditClick(kamus) }
-                ) {
+                IconButton(onClick = { onEditClick(kamus) }) {
                     Icon(
                         painter = painterResource(id = R.drawable.baseline_edit_24),
-                        contentDescription = "Edit",
+                        contentDescription = "Edit Teks",
+                        tint = Color.White
+                    )
+                }
+                IconButton(onClick = { onDeleteClick(kamus.id) }) {
+                    Icon(
+                        painter = painterResource(id = R.drawable.baseline_delete_24),
+                        contentDescription = "Hapus",
                         tint = Color.White
                     )
                 }
